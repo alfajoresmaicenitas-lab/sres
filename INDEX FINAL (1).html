@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de Rentabilidad</title>
+  <style>
+    :root {
+      --bg-color: #f4ece3;
+      --card-bg: #fff7ef;
+      --accent: #c27d3f;
+      --accent-dark: #9b622d;
+      --text-color: #3d2f21;
+      --muted-text: #6e5a4b;
+      --border-radius: 18px;
+      --shadow: 0 12px 24px rgba(90, 60, 30, 0.15);
+      --shadow-light: 0 4px 12px rgba(90, 60, 30, 0.08);
+      --transition: all 0.25s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Poppins", "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.5;
+      padding: 40px 16px 80px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      letter-spacing: 0.02em;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-light);
+      transition: var(--transition);
+    }
+
+    button.primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    section {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-light);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    section h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .sku-card, .cost-card, .result-card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow-light);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .sku-card h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--accent-dark);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(194, 125, 63, 0.1);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      color: var(--accent-dark);
+    }
+
+    .sku-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .sku-actions button {
+      flex: 1;
+      background: transparent;
+      border: 1px solid rgba(194, 125, 63, 0.3);
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--accent-dark);
+      transition: var(--transition);
+    }
+
+    .sku-actions button:hover {
+      border-color: var(--accent-dark);
+      background: rgba(194, 125, 63, 0.08);
+    }
+
+    .cost-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ghost-button {
+      background: transparent;
+      border: 1px dashed rgba(194, 125, 63, 0.5);
+      color: var(--accent-dark);
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .ghost-button:hover {
+      border-style: solid;
+      background: rgba(194, 125, 63, 0.1);
+    }
+
+    .cost-card h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .cost-card .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--muted-text);
+    }
+
+    .cost-card .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .cost-card .actions button {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .cost-card .actions button.edit {
+      background: rgba(194, 125, 63, 0.16);
+      color: var(--accent-dark);
+    }
+
+    .cost-card .actions button.delete {
+      background: rgba(179, 55, 39, 0.15);
+      color: #9b2d1b;
+    }
+
+    .inline-chip {
+      background: rgba(0,0,0,0.06);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+    }
+
+    .cost-summary {
+      background: rgba(255,255,255,0.8);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-light);
+    }
+
+    .summary-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .toggle {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .toggle input {
+      width: 46px;
+      height: 24px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(0,0,0,0.15);
+      border-radius: 999px;
+      position: relative;
+      outline: none;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .toggle input::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: var(--transition);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    }
+
+    .toggle input:checked {
+      background: var(--accent);
+    }
+
+    .toggle input:checked::after {
+      transform: translateX(22px);
+    }
+
+    .parameter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .parameter-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow-light);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    label span {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted-text);
+      margin-bottom: 6px;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.12);
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(194,125,63,0.18);
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mode-selector button {
+      flex: 1 1 140px;
+      background: rgba(194,125,63,0.12);
+      border: none;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      color: var(--accent-dark);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .mode-selector button.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: var(--shadow-light);
+    }
+
+    .mode-panel {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .mode-panel.active {
+      display: flex;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr 80px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .slider-row strong {
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .alert {
+      background: rgba(179, 55, 39, 0.1);
+      color: #8b2b1a;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .result-card h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--accent-dark);
+    }
+
+    .result-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .result-body ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .result-body li {
+      background: rgba(194,125,63,0.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 600;
+    }
+
+    .result-body li strong {
+      display: block;
+    }
+
+    .result-quantity {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    .result-quantity-real {
+      font-size: 1.05rem;
+      color: var(--text-color);
+      font-weight: 700;
+    }
+
+    .result-quantity-exact {
+      font-size: 0.9rem;
+      color: var(--muted-text);
+    }
+
+    .result-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .result-footer button {
+      align-self: flex-start;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent-dark);
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .result-footer button:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    .warnings {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.95rem;
+      color: #8b2b1a;
+    }
+
+    .empty-state {
+      padding: 18px;
+      border-radius: 14px;
+      background: rgba(194, 125, 63, 0.12);
+      text-align: center;
+      font-weight: 600;
+      color: var(--accent-dark);
+    }
+
+    .collapsible {
+      background: rgba(194,125,63,0.08);
+      padding: 14px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .collapsible button {
+      align-self: flex-start;
+      background: transparent;
+      border: none;
+      color: var(--accent-dark);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .collapsible-content {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .collapsible-content.open {
+      display: flex;
+    }
+
+    .cost-breakdown-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow-light);
+    }
+
+    .cost-breakdown-card h4 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      color: var(--accent-dark);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--accent-dark);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: var(--transition);
+      font-weight: 600;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .cost-group-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      background: rgba(194, 125, 63, 0.08);
+      padding: 12px 16px;
+      border-radius: 14px;
+    }
+
+    .cost-group-bar label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--muted-text);
+    }
+
+    .cost-group-bar select {
+      border-radius: 10px;
+      padding: 8px 10px;
+      border: 1px solid rgba(194, 125, 63, 0.35);
+      background: white;
+      font-size: 0.95rem;
+      min-width: 220px;
+    }
+
+    .group-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(61, 47, 33, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      width: min(400px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal h3 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: var(--accent-dark);
+    }
+
+    .modal-message {
+      margin: 0;
+      color: var(--muted-text);
+      font-size: 0.95rem;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .modal-actions button {
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .modal-actions button.cancel {
+      background: rgba(0,0,0,0.08);
+      color: var(--muted-text);
+    }
+
+    .modal-actions button.confirm {
+      background: var(--accent);
+      color: white;
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 24px 10px 60px;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .result-body li {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>Calculadora de Rentabilidad</h1>
+      <button class="primary" id="resetDataBtn">Resetear datos</button>
+    </header>
+
+    <section id="productsSection">
+      <h2>Productos</h2>
+      <div class="card-grid" id="productsGrid"></div>
+    </section>
+
+    <section id="costsSection">
+      <div class="cost-header">
+        <h2>Costos a cubrir</h2>
+        <button class="ghost-button" id="addCostBtn">Agregar costo</button>
+      </div>
+      <div class="cost-group-bar">
+        <label>
+          <span>Cargar grupo</span>
+          <select id="costGroupSelect">
+            <option value="">Todos los costos</option>
+          </select>
+        </label>
+        <div class="group-actions">
+          <button class="ghost-button" id="createGroupBtn" type="button">Crear grupo</button>
+          <button class="ghost-button" id="renameGroupBtn" type="button" disabled>Renombrar</button>
+          <button class="ghost-button" id="deleteGroupBtn" type="button" disabled>Eliminar</button>
+        </div>
+      </div>
+      <div id="costsList" class="card-grid"></div>
+      <div class="cost-summary">
+        <div class="summary-top">
+          <strong>Total prorrateado (<span id="currentPeriodLabel"></span>):</strong>
+          <span id="totalCostDisplay">$0,00</span>
+        </div>
+        <div class="collapsible">
+          <button type="button" id="toggleCostDetail">
+            <span id="costDetailToggleLabel">Ver detalle por costo</span>
+            <span>▼</span>
+          </button>
+          <div class="collapsible-content" id="costDetailPanel"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="parametersSection">
+      <h2>Parámetros de cálculo</h2>
+      <div class="parameter-grid">
+        <div class="parameter-card">
+          <label>
+            <span>Período objetivo</span>
+            <select id="periodSelect">
+              <option value="diario">Diario</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensual">Mensual</option>
+              <option value="anual">Anual</option>
+            </select>
+          </label>
+        </div>
+        <div class="parameter-card">
+          <div class="toggle">
+            <label for="commissionToggle">Aplicar comisiones</label>
+            <input type="checkbox" id="commissionToggle" />
+          </div>
+          <div id="commissionFields" style="display:none; gap:12px;">
+            <label>
+              <span>Comisión variable (%)</span>
+              <input type="number" id="commissionPct" min="0" max="20" step="0.1" />
+            </label>
+            <label>
+              <span>Monto fijo por transacción ($)</span>
+              <input type="number" id="commissionFixed" min="0" step="10" />
+            </label>
+            <!-- Futuro: mix de cobro -->
+          </div>
+        </div>
+      </div>
+      <div class="parameter-card">
+        <span style="font-weight:600; color: var(--muted-text);">Modo de cálculo</span>
+        <div class="mode-selector">
+          <button type="button" data-mode="single">Producto único</button>
+          <button type="button" data-mode="mix">Mix manual</button>
+          <button type="button" data-mode="auto">Opciones automáticas</button>
+        </div>
+        <div class="mode-panel" data-panel="single">
+          <label>
+            <span>Seleccioná un producto</span>
+            <select id="singleSkuSelect"></select>
+          </label>
+          <button class="primary" id="calculateSingleBtn">Calcular unidades</button>
+        </div>
+        <div class="mode-panel" data-panel="mix">
+          <div id="mixSliders" class="mix-sliders"></div>
+          <div><strong>Total mix: <span id="mixTotalLabel">0%</span></strong></div>
+          <div id="mixWarning" class="alert" style="display:none;">El mix debe sumar 100% para calcular.</div>
+          <button class="primary" id="calculateMixBtn">Calcular mix manual</button>
+        </div>
+        <div class="mode-panel" data-panel="auto">
+          <p style="margin:0; color: var(--muted-text);">Generaremos 8 combinaciones diferentes para cubrir el objetivo según el margen y precio de los productos.</p>
+          <button class="primary" id="generateOptionsBtn">Generar opciones</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultsSection">
+      <h2>Resultados</h2>
+      <div id="resultsContainer" class="card-grid"></div>
+    </section>
+  </div>
+
+  <div id="modal-root"></div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      const SCHEMA_VERSION = 1;
+      const STORAGE_KEY = 'rentabilidad_app_state_v1';
+      const PERIOD_LABELS = { diario: 'Diario', semanal: 'Semanal', mensual: 'Mensual', anual: 'Anual' };
+      const PERIOD_CONVERSION = {
+        diario: { diario: 1, semanal: 7, mensual: 30, anual: 365 },
+        semanal: { diario: 1 / 7, semanal: 1, mensual: 4.345, anual: 52 },
+        mensual: { diario: 1 / 30, semanal: 1 / 4.345, mensual: 1, anual: 12 },
+        anual: { diario: 1 / 365, semanal: 1 / 52, mensual: 1 / 12, anual: 1 }
+      };
+
+      const DEFAULT_PRODUCTS = [
+        { id: 'sku_28_maicena', name: '28 mm Maicena', pricePer100: 22000, costPer100: 7234, unitsPerBox: 100, minUnits: 100, description: 'Empaque: 100 u por caja. Mínimo operativo 100 u (1 caja).' },
+        { id: 'sku_28_chocolate', name: '28 mm Chocolate', pricePer100: 23000, costPer100: 7307, unitsPerBox: 100, minUnits: 100, description: 'Empaque: 100 u por caja. Mínimo operativo 100 u (1 caja).' },
+        { id: 'sku_44_maicena', name: '44 mm Maicena', pricePer100: 32500, costPer100: 13356, unitsPerBox: 50, minUnits: 100, description: 'Empaque: 50 u por caja. Mínimo operativo 100 u (2 cajas).' },
+        { id: 'sku_44_chocolate', name: '44 mm Chocolate', pricePer100: 34000, costPer100: 13560, unitsPerBox: 50, minUnits: 100, description: 'Empaque: 50 u por caja. Mínimo operativo 100 u (2 cajas).' }
+      ];
+
+      const currencyFormatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
+      const numberFormatter = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const integerFormatter = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
+
+      let state = loadState();
+      let lastResults = [];
+      let toastTimeout = null;
+
+      const modalRoot = ensureModalRoot();
+
+      function ensureModalRoot() {
+        let root = document.getElementById('modal-root');
+        if (!root) {
+          root = document.createElement('div');
+          root.id = 'modal-root';
+          document.body.appendChild(root);
+        }
+        return root;
+      }
+
+      function getFocusableElements(container) {
+        const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        return Array.from(container.querySelectorAll(selectors)).filter((element) => {
+          return !element.disabled && element.getAttribute('aria-hidden') !== 'true' && element.tabIndex !== -1;
+        });
+      }
+
+      function trapFocus(event, container) {
+        if (event.key !== 'Tab') return;
+        const focusable = getFocusableElements(container);
+        if (!focusable.length) {
+          event.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (focusable.length === 1) {
+          event.preventDefault();
+          first.focus();
+          return;
+        }
+        if (event.shiftKey) {
+          if (document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else if (document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+
+      async function openAlertModal({ title, message }) {
+        return new Promise((resolve) => {
+          const overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          const modal = document.createElement('div');
+          modal.className = 'modal';
+          modal.setAttribute('role', 'dialog');
+          modal.setAttribute('aria-modal', 'true');
+
+          const heading = document.createElement('h3');
+          heading.textContent = title;
+          const body = document.createElement('p');
+          body.className = 'modal-message';
+          body.textContent = message;
+          const actions = document.createElement('div');
+          actions.className = 'modal-actions';
+          const confirmButton = document.createElement('button');
+          confirmButton.className = 'confirm';
+          confirmButton.type = 'button';
+          confirmButton.textContent = 'Aceptar';
+          actions.appendChild(confirmButton);
+
+          modal.appendChild(heading);
+          modal.appendChild(body);
+          modal.appendChild(actions);
+          overlay.appendChild(modal);
+          modalRoot.appendChild(overlay);
+
+          const focusTarget = getFocusableElements(modal)[0] || confirmButton;
+          setTimeout(() => focusTarget.focus(), 0);
+
+          const cleanup = () => {
+            overlay.removeEventListener('click', handleOverlayClick);
+            overlay.removeEventListener('keydown', handleKeyDown);
+            confirmButton.removeEventListener('click', handleConfirm);
+            if (overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+            }
+          };
+
+          const handleConfirm = () => {
+            cleanup();
+            resolve();
+          };
+
+          const handleOverlayClick = (event) => {
+            if (event.target === overlay) {
+              handleConfirm();
+            }
+          };
+
+          const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              handleConfirm();
+              return;
+            }
+            if (event.key === 'Enter' && document.activeElement === confirmButton) {
+              event.preventDefault();
+              handleConfirm();
+              return;
+            }
+            trapFocus(event, modal);
+          };
+
+          overlay.addEventListener('click', handleOverlayClick);
+          overlay.addEventListener('keydown', handleKeyDown);
+          confirmButton.addEventListener('click', handleConfirm);
+        });
+      }
+
+      async function openConfirmModal({ title, message, confirmText = 'Confirmar', cancelText = 'Cancelar' }) {
+        return new Promise((resolve) => {
+          const overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          const modal = document.createElement('div');
+          modal.className = 'modal';
+          modal.setAttribute('role', 'dialog');
+          modal.setAttribute('aria-modal', 'true');
+
+          const heading = document.createElement('h3');
+          heading.textContent = title;
+          const body = document.createElement('p');
+          body.className = 'modal-message';
+          body.textContent = message;
+          const actions = document.createElement('div');
+          actions.className = 'modal-actions';
+          const cancelButton = document.createElement('button');
+          cancelButton.className = 'cancel';
+          cancelButton.type = 'button';
+          cancelButton.textContent = cancelText;
+          const confirmButton = document.createElement('button');
+          confirmButton.className = 'confirm';
+          confirmButton.type = 'button';
+          confirmButton.textContent = confirmText;
+          actions.appendChild(cancelButton);
+          actions.appendChild(confirmButton);
+
+          modal.appendChild(heading);
+          modal.appendChild(body);
+          modal.appendChild(actions);
+          overlay.appendChild(modal);
+          modalRoot.appendChild(overlay);
+
+          const focusTarget = getFocusableElements(modal)[0] || cancelButton;
+          setTimeout(() => focusTarget.focus(), 0);
+
+          const cleanup = () => {
+            overlay.removeEventListener('click', handleOverlayClick);
+            overlay.removeEventListener('keydown', handleKeyDown);
+            cancelButton.removeEventListener('click', handleCancel);
+            confirmButton.removeEventListener('click', handleConfirm);
+            if (overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+            }
+          };
+
+          const handleCancel = () => {
+            cleanup();
+            resolve(false);
+          };
+
+          const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+          };
+
+          const handleOverlayClick = (event) => {
+            if (event.target === overlay) {
+              handleCancel();
+            }
+          };
+
+          const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              handleCancel();
+              return;
+            }
+            trapFocus(event, modal);
+          };
+
+          overlay.addEventListener('click', handleOverlayClick);
+          overlay.addEventListener('keydown', handleKeyDown);
+          cancelButton.addEventListener('click', handleCancel);
+          confirmButton.addEventListener('click', handleConfirm);
+        });
+      }
+
+      async function openPromptModal({ title, label, placeholder = '', initialValue = '', confirmText = 'Aceptar', cancelText = 'Cancelar' }) {
+        return new Promise((resolve) => {
+          const overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          const modal = document.createElement('div');
+          modal.className = 'modal';
+          modal.setAttribute('role', 'dialog');
+          modal.setAttribute('aria-modal', 'true');
+
+          const heading = document.createElement('h3');
+          heading.textContent = title;
+          const body = document.createElement('div');
+          body.className = 'modal-body';
+          const promptLabel = document.createElement('label');
+          const labelSpan = document.createElement('span');
+          labelSpan.textContent = label;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = initialValue;
+          input.placeholder = placeholder;
+          promptLabel.appendChild(labelSpan);
+          promptLabel.appendChild(input);
+          body.appendChild(promptLabel);
+          const actions = document.createElement('div');
+          actions.className = 'modal-actions';
+          const cancelButton = document.createElement('button');
+          cancelButton.className = 'cancel';
+          cancelButton.type = 'button';
+          cancelButton.textContent = cancelText;
+          const confirmButton = document.createElement('button');
+          confirmButton.className = 'confirm';
+          confirmButton.type = 'button';
+          confirmButton.textContent = confirmText;
+          actions.appendChild(cancelButton);
+          actions.appendChild(confirmButton);
+
+          modal.appendChild(heading);
+          modal.appendChild(body);
+          modal.appendChild(actions);
+          overlay.appendChild(modal);
+          modalRoot.appendChild(overlay);
+
+          setTimeout(() => input.focus(), 0);
+
+          const cleanup = () => {
+            overlay.removeEventListener('click', handleOverlayClick);
+            overlay.removeEventListener('keydown', handleKeyDown);
+            cancelButton.removeEventListener('click', handleCancel);
+            confirmButton.removeEventListener('click', handleConfirm);
+            if (overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+            }
+          };
+
+          const handleCancel = () => {
+            cleanup();
+            resolve(null);
+          };
+
+          const handleConfirm = () => {
+            cleanup();
+            resolve(input.value);
+          };
+
+          const handleOverlayClick = (event) => {
+            if (event.target === overlay) {
+              handleCancel();
+            }
+          };
+
+          const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              handleCancel();
+              return;
+            }
+            if (event.key === 'Enter' && !event.shiftKey && document.activeElement === input) {
+              event.preventDefault();
+              handleConfirm();
+              return;
+            }
+            trapFocus(event, modal);
+          };
+
+          overlay.addEventListener('click', handleOverlayClick);
+          overlay.addEventListener('keydown', handleKeyDown);
+          cancelButton.addEventListener('click', handleCancel);
+          confirmButton.addEventListener('click', handleConfirm);
+        });
+      }
+
+      const elements = {
+        productsGrid: document.getElementById('productsGrid'),
+        costsList: document.getElementById('costsList'),
+        periodSelect: document.getElementById('periodSelect'),
+        commissionToggle: document.getElementById('commissionToggle'),
+        commissionFields: document.getElementById('commissionFields'),
+        commissionPct: document.getElementById('commissionPct'),
+        commissionFixed: document.getElementById('commissionFixed'),
+        resultsContainer: document.getElementById('resultsContainer'),
+        singleSkuSelect: document.getElementById('singleSkuSelect'),
+        mixSliders: document.getElementById('mixSliders'),
+        mixTotalLabel: document.getElementById('mixTotalLabel'),
+        mixWarning: document.getElementById('mixWarning'),
+        calculateSingleBtn: document.getElementById('calculateSingleBtn'),
+        calculateMixBtn: document.getElementById('calculateMixBtn'),
+        generateOptionsBtn: document.getElementById('generateOptionsBtn'),
+        costGroupSelect: document.getElementById('costGroupSelect'),
+        createGroupBtn: document.getElementById('createGroupBtn'),
+        renameGroupBtn: document.getElementById('renameGroupBtn'),
+        deleteGroupBtn: document.getElementById('deleteGroupBtn'),
+        totalCostDisplay: document.getElementById('totalCostDisplay'),
+        currentPeriodLabel: document.getElementById('currentPeriodLabel'),
+        costDetailPanel: document.getElementById('costDetailPanel'),
+        costDetailToggle: document.getElementById('toggleCostDetail'),
+        costDetailToggleLabel: document.getElementById('costDetailToggleLabel'),
+        toast: document.getElementById('toast')
+      };
+
+      init();
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return getDefaultState();
+          const parsed = JSON.parse(raw);
+          if (parsed.version !== SCHEMA_VERSION) return getDefaultState();
+          const merged = Object.assign({}, getDefaultState(), parsed);
+          merged.products = Array.isArray(parsed.products) && parsed.products.length ? parsed.products.map(copyProduct) : DEFAULT_PRODUCTS.map(copyProduct);
+          merged.costs = Array.isArray(parsed.costs) ? parsed.costs.map(copyCost).filter(Boolean) : [];
+          merged.costGroups = Array.isArray(parsed.costGroups) ? parsed.costGroups.map(copyCostGroup).filter(Boolean) : [];
+          merged.activeCostGroupId = parsed.activeCostGroupId && merged.costGroups.some(group => group.id === parsed.activeCostGroupId) ? parsed.activeCostGroupId : null;
+          merged.settings = Object.assign({}, getDefaultState().settings, parsed.settings || {});
+          ensureMixCompleteness(merged);
+          return merged;
+        } catch (error) {
+          console.error('No se pudo cargar el estado, se usará la configuración por defecto.', error);
+          return getDefaultState();
+        }
+      }
+
+      function getDefaultState() {
+        const mix = {};
+        const base = Math.floor(100 / DEFAULT_PRODUCTS.length);
+        let remainder = 100 - base * DEFAULT_PRODUCTS.length;
+        DEFAULT_PRODUCTS.forEach((product) => {
+          let value = base;
+          if (remainder > 0) {
+            value += 1;
+            remainder -= 1;
+          }
+          mix[product.id] = value;
+        });
+        return {
+          version: SCHEMA_VERSION,
+          products: DEFAULT_PRODUCTS.map(copyProduct),
+          costs: [],
+          costGroups: [],
+          activeCostGroupId: null,
+          settings: {
+            period: 'mensual',
+            commissions: { enabled: false, pct: 0, fixed: 0 },
+            mode: 'single',
+            selectedSkuId: DEFAULT_PRODUCTS[0].id,
+            mix
+          }
+        };
+      }
+
+      function ensureMixCompleteness(currentState) {
+        const mix = Object.assign({}, currentState.settings.mix || {});
+        currentState.products.forEach((product) => {
+          if (typeof mix[product.id] !== 'number') mix[product.id] = 0;
+        });
+        currentState.settings.mix = mix;
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function copyProduct(product) {
+        return Object.assign({}, product);
+      }
+
+      function copyCost(cost) {
+        if (!cost) return null;
+        const cloned = Object.assign({}, cost);
+        cloned.groupId = cloned.groupId || null;
+        return cloned;
+      }
+
+      function copyCostGroup(group) {
+        if (!group || !group.id) return null;
+        return { id: group.id, name: group.name || 'Grupo sin nombre' };
+      }
+
+      function init() {
+        bindEvents();
+        renderParameters();
+        renderProducts();
+        renderGroupControls();
+        renderCosts();
+        updateModeButtons();
+        updateModePanels();
+        updateCostSummary();
+        renderResults([]);
+      }
+
+      function bindEvents() {
+        document.getElementById('resetDataBtn').addEventListener('click', handleReset);
+        document.getElementById('addCostBtn').addEventListener('click', () => openCostModal());
+        elements.periodSelect.addEventListener('change', (ev) => {
+          state.settings.period = ev.target.value;
+          saveState();
+          updateCostSummary();
+        });
+        elements.commissionToggle.addEventListener('change', (ev) => {
+          state.settings.commissions.enabled = ev.target.checked;
+          elements.commissionFields.style.display = ev.target.checked ? 'flex' : 'none';
+          saveState();
+        });
+        elements.commissionPct.addEventListener('input', (ev) => {
+          state.settings.commissions.pct = parseFloat(ev.target.value) || 0;
+          saveState();
+        });
+        elements.commissionFixed.addEventListener('input', (ev) => {
+          state.settings.commissions.fixed = parseFloat(ev.target.value) || 0;
+          saveState();
+        });
+        elements.costGroupSelect.addEventListener('change', (ev) => {
+          const groupId = ev.target.value || null;
+          state.activeCostGroupId = groupId;
+          saveState();
+          renderCosts();
+          updateCostSummary();
+          renderResults([]);
+          renderGroupControls();
+        });
+        elements.createGroupBtn.addEventListener('click', handleCreateGroup);
+        elements.renameGroupBtn.addEventListener('click', handleRenameGroup);
+        elements.deleteGroupBtn.addEventListener('click', handleDeleteGroup);
+        elements.calculateSingleBtn.addEventListener('click', handleSingleCalculation);
+        elements.calculateMixBtn.addEventListener('click', handleMixCalculation);
+        elements.generateOptionsBtn.addEventListener('click', handleGenerateOptions);
+        elements.costDetailToggle.addEventListener('click', toggleCostDetailPanel);
+        document.querySelectorAll('.mode-selector button').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.settings.mode = button.dataset.mode;
+            saveState();
+            updateModeButtons();
+            updateModePanels();
+          });
+        });
+      }
+
+      async function handleReset() {
+        const confirmed = await openConfirmModal({
+          title: 'Resetear datos',
+          message: '¿Seguro que querés borrar todos los datos guardados?',
+          confirmText: 'Borrar todo',
+          cancelText: 'Cancelar'
+        }); // REPLACED: native dialog → internal modal
+        if (!confirmed) return;
+        localStorage.removeItem(STORAGE_KEY);
+        state = getDefaultState();
+        lastResults = [];
+        renderParameters();
+        renderProducts();
+        renderGroupControls();
+        renderCosts();
+        updateModeButtons();
+        updateModePanels();
+        updateCostSummary();
+        renderResults([]);
+        showToast('Datos restaurados');
+      }
+
+      function renderParameters() {
+        if (!PERIOD_LABELS[state.settings.period]) {
+          state.settings.period = 'mensual';
+        }
+        elements.periodSelect.value = state.settings.period;
+        elements.commissionToggle.checked = !!state.settings.commissions.enabled;
+        elements.commissionFields.style.display = state.settings.commissions.enabled ? 'flex' : 'none';
+        elements.commissionPct.value = state.settings.commissions.pct || 0;
+        elements.commissionFixed.value = state.settings.commissions.fixed || 0;
+      }
+
+      function renderProducts() {
+        elements.productsGrid.innerHTML = '';
+        state.products.forEach((product) => {
+          const marginInfo = calculateMargins(product);
+          const card = document.createElement('div');
+          card.className = 'sku-card';
+          card.innerHTML = `
+            <div>
+              <h3>${product.name}</h3>
+              <div class="tag">Margen actual: ${numberFormatter.format(marginInfo.marginPct * 100)}%</div>
+            </div>
+            <div>
+              <div>Precio 100u: <strong>${currencyFormatter.format(product.pricePer100)}</strong></div>
+              <div>Costo 100u: <strong>${currencyFormatter.format(product.costPer100)}</strong></div>
+            </div>
+            <p style="margin:0; color: var(--muted-text);">${product.description}</p>
+            <div class="sku-actions">
+              <button data-action="edit-price" data-id="${product.id}">Editar precio 100u</button>
+              <button data-action="edit-cost" data-id="${product.id}">Editar costo 100u</button>
+            </div>
+          `;
+          card.querySelectorAll('button').forEach((btn) => {
+            btn.addEventListener('click', () => handleProductEdit(btn.dataset.id, btn.dataset.action));
+          });
+          elements.productsGrid.appendChild(card);
+        });
+        populateSingleSkuSelect();
+        renderMixSliders();
+      }
+
+      function calculateMargins(product) {
+        const pricing = buildPricing(product);
+        const marginUnit = pricing.netUnit - pricing.costUnit;
+        const marginPct = pricing.netUnit > 0 ? marginUnit / pricing.netUnit : 0;
+        return { marginUnit, marginPct };
+      }
+
+      function buildPricing(product) {
+        const priceUnit = product.pricePer100 / 100;
+        const costUnit = product.costPer100 / 100;
+        let netUnit = priceUnit;
+        if (state.settings.commissions.enabled) {
+          const pct = (state.settings.commissions.pct || 0) / 100;
+          const fixed = (state.settings.commissions.fixed || 0) / 100;
+          netUnit = priceUnit - (priceUnit * pct) - fixed;
+        }
+        return { priceUnit, costUnit, netUnit };
+      }
+
+      function handleProductEdit(productId, action) {
+        const product = state.products.find(p => p.id === productId);
+        if (!product) return;
+        const isPrice = action === 'edit-price';
+        const title = isPrice ? 'Editar precio por 100 unidades' : 'Editar costo por 100 unidades';
+        const fieldLabel = isPrice ? 'Nuevo precio ($)' : 'Nuevo costo ($)';
+        const currentValue = isPrice ? product.pricePer100 : product.costPer100;
+        openValueModal({
+          title,
+          label: fieldLabel,
+          value: currentValue,
+          min: 0,
+          step: 1,
+          onConfirm: async (value) => {
+            const numeric = parseFloat(value);
+            if (isNaN(numeric) || numeric <= 0) {
+              await openAlertModal({
+                title: 'Valor inválido',
+                message: 'Ingresá un valor numérico mayor a 0.'
+              }); // REPLACED: native dialog → internal modal
+              return false;
+            }
+            if (isPrice) {
+              product.pricePer100 = numeric;
+            } else {
+              product.costPer100 = numeric;
+            }
+            saveState();
+            renderProducts();
+            updateCostSummary();
+            showToast('Producto actualizado');
+            return true;
+          }
+        });
+      }
+
+      function openValueModal({ title, label, value, min, step, onConfirm }) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+          <div class="modal" role="dialog" aria-modal="true">
+            <h3>${title}</h3>
+            <label>
+              <span>${label}</span>
+              <input type="number" id="modalInput" value="${value}" min="${min ?? 0}" step="${step ?? 0.01}" />
+            </label>
+            <div class="modal-actions">
+              <button class="cancel">Cancelar</button>
+              <button class="confirm">Guardar</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        const input = overlay.querySelector('#modalInput');
+        setTimeout(() => input.focus(), 60);
+        const close = () => document.body.removeChild(overlay);
+        overlay.addEventListener('click', (event) => {
+          if (event.target === overlay) close();
+        });
+        overlay.querySelector('.cancel').addEventListener('click', close);
+        overlay.querySelector('.confirm').addEventListener('click', async () => {
+          const accepted = await onConfirm(input.value);
+          if (accepted !== false) close();
+        });
+      }
+
+      function populateSingleSkuSelect() {
+        const select = elements.singleSkuSelect;
+        select.innerHTML = '';
+        state.products.forEach((product) => {
+          const option = document.createElement('option');
+          option.value = product.id;
+          option.textContent = product.name;
+          select.appendChild(option);
+        });
+        select.value = state.settings.selectedSkuId;
+        select.onchange = (ev) => {
+          state.settings.selectedSkuId = ev.target.value;
+          saveState();
+        };
+      }
+
+      function renderMixSliders() {
+        elements.mixSliders.innerHTML = '';
+        const mix = state.settings.mix || {};
+        state.products.forEach((product) => {
+          const value = mix[product.id] ?? 0;
+          const wrapper = document.createElement('div');
+          wrapper.className = 'slider-row';
+          wrapper.innerHTML = `
+            <div>
+              <label>
+                <span>${product.name}</span>
+                <input type="range" min="0" max="100" step="1" value="${value}" data-id="${product.id}" />
+              </label>
+            </div>
+            <strong><span data-range-label="${product.id}">${value}</span>%</strong>
+          `;
+          elements.mixSliders.appendChild(wrapper);
+        });
+        elements.mixSliders.querySelectorAll('input[type="range"]').forEach((slider) => {
+          slider.addEventListener('input', () => {
+            const id = slider.dataset.id;
+            const val = parseInt(slider.value, 10) || 0;
+            state.settings.mix[id] = val;
+            const label = elements.mixSliders.querySelector(`[data-range-label="${id}"]`);
+            if (label) label.textContent = val;
+            updateMixTotal();
+            saveState();
+          });
+        });
+        updateMixTotal();
+      }
+
+      function updateMixTotal() {
+        const total = state.products.reduce((acc, product) => acc + (state.settings.mix[product.id] || 0), 0);
+        elements.mixTotalLabel.textContent = total + '%';
+        const withinTolerance = Math.abs(total - 100) <= 0.5;
+        elements.mixWarning.style.display = withinTolerance ? 'none' : 'block';
+        elements.calculateMixBtn.disabled = !withinTolerance;
+        elements.calculateMixBtn.style.opacity = withinTolerance ? '1' : '0.6';
+      }
+
+      function getActiveCosts() {
+        if (!state.activeCostGroupId) return state.costs.slice();
+        return state.costs.filter(cost => cost.groupId === state.activeCostGroupId);
+      }
+
+      function renderCosts() {
+        const list = elements.costsList;
+        list.innerHTML = '';
+        const costs = getActiveCosts();
+        if (!costs.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = state.activeCostGroupId ? 'Este grupo no tiene costos cargados todavía.' : 'Todavía no cargaste costos. Agregá uno para comenzar.';
+          list.appendChild(empty);
+          return;
+        }
+        const showGroupBadge = !state.activeCostGroupId;
+        const activePeriodLabel = (PERIOD_LABELS[state.settings.period] || 'Seleccionado').toLowerCase();
+        costs.forEach((cost) => {
+          const card = document.createElement('div');
+          card.className = 'cost-card';
+          const amountText = currencyFormatter.format(cost.amount);
+          const amortizationText = cost.type === 'inversion' ? `Amortiza en ${cost.amortization || 1} períodos` : 'Fijo recurrente';
+          const prorated = currencyFormatter.format(prorateCostAmount(cost, state.settings.period));
+          const group = cost.groupId ? state.costGroups.find(g => g.id === cost.groupId) : null;
+          const periodLabel = PERIOD_LABELS[cost.period] || 'Sin período';
+          card.innerHTML = `
+            <h3>${cost.name}</h3>
+            <div class="meta">
+              <span class="inline-chip">${cost.type === 'inversion' ? 'Inversión' : 'Fijo'}</span>
+              <span>${amountText} (${periodLabel})</span>
+              <span>${amortizationText}</span>
+              ${showGroupBadge && group ? `<span class="inline-chip">Grupo: ${group.name}</span>` : ''}
+            </div>
+            <div>Equivale a <strong>${prorated}</strong> por período ${activePeriodLabel}.</div>
+            <div class="actions">
+              <button class="edit">Editar</button>
+              <button class="delete">Eliminar</button>
+            </div>
+          `;
+          card.querySelector('.edit').addEventListener('click', () => openCostModal(cost));
+          card.querySelector('.delete').addEventListener('click', () => deleteCost(cost.id));
+          list.appendChild(card);
+        });
+      }
+
+      function renderGroupControls() {
+        if (!elements.costGroupSelect) return;
+        if (state.activeCostGroupId && !state.costGroups.some(group => group.id === state.activeCostGroupId)) {
+          state.activeCostGroupId = null;
+          saveState();
+          renderResults([]);
+        }
+        const current = state.activeCostGroupId || '';
+        elements.costGroupSelect.innerHTML = '<option value="">Todos los costos</option>' + state.costGroups.map((group) => `<option value="${group.id}">${group.name}</option>`).join('');
+        elements.costGroupSelect.value = current;
+        const hasSelection = Boolean(state.activeCostGroupId);
+        elements.renameGroupBtn.disabled = !hasSelection;
+        elements.deleteGroupBtn.disabled = !hasSelection;
+      }
+
+      async function handleCreateGroup() {
+        const name = await openPromptModal({
+          title: 'Nuevo grupo de costos',
+          label: 'Nombre del nuevo grupo de costos',
+          placeholder: 'Ej.: Servicios',
+          confirmText: 'Crear',
+          cancelText: 'Cancelar'
+        }); // REPLACED: native dialog → internal modal
+        if (!name) return;
+        const trimmed = name.trim();
+        if (!trimmed) {
+          await openAlertModal({
+            title: 'Nombre inválido',
+            message: 'Ingresá un nombre válido para el grupo.'
+          }); // REPLACED: native dialog → internal modal
+          return;
+        }
+        const newGroup = { id: `group_${Date.now()}`, name: trimmed };
+        state.costGroups.push(newGroup);
+        state.activeCostGroupId = newGroup.id;
+        saveState();
+        renderGroupControls();
+        renderCosts();
+        updateCostSummary();
+        renderResults([]);
+        showToast('Grupo creado');
+      }
+
+      async function handleRenameGroup() {
+        if (!state.activeCostGroupId) {
+          await openAlertModal({
+            title: 'Acción no disponible',
+            message: 'Seleccioná un grupo para renombrar.'
+          }); // REPLACED: native dialog → internal modal
+          return;
+        }
+        const group = state.costGroups.find(g => g.id === state.activeCostGroupId);
+        if (!group) return;
+        const name = await openPromptModal({
+          title: 'Renombrar grupo',
+          label: 'Nuevo nombre del grupo',
+          placeholder: 'Ej.: Costos fijos',
+          initialValue: group.name,
+          confirmText: 'Guardar',
+          cancelText: 'Cancelar'
+        }); // REPLACED: native dialog → internal modal
+        if (name === null) return;
+        const trimmed = name.trim();
+        if (!trimmed) {
+          await openAlertModal({
+            title: 'Nombre inválido',
+            message: 'Ingresá un nombre válido para el grupo.'
+          }); // REPLACED: native dialog → internal modal
+          return;
+        }
+        group.name = trimmed;
+        saveState();
+        renderGroupControls();
+        renderCosts();
+        showToast('Grupo renombrado');
+      }
+
+      async function handleDeleteGroup() {
+        if (!state.activeCostGroupId) {
+          await openAlertModal({
+            title: 'Acción no disponible',
+            message: 'Seleccioná un grupo para eliminar.'
+          }); // REPLACED: native dialog → internal modal
+          return;
+        }
+        const group = state.costGroups.find(g => g.id === state.activeCostGroupId);
+        if (!group) return;
+        const confirmed = await openConfirmModal({
+          title: 'Eliminar grupo',
+          message: `¿Eliminar el grupo "${group.name}"? Los costos permanecerán sin grupo.`,
+          confirmText: 'Eliminar',
+          cancelText: 'Cancelar'
+        }); // REPLACED: native dialog → internal modal
+        if (!confirmed) return;
+        state.costGroups = state.costGroups.filter(g => g.id !== group.id);
+        state.costs = state.costs.map((cost) => cost.groupId === group.id ? Object.assign({}, cost, { groupId: null }) : cost);
+        state.activeCostGroupId = null;
+        saveState();
+        renderGroupControls();
+        renderCosts();
+        updateCostSummary();
+        renderResults([]);
+        showToast('Grupo eliminado');
+      }
+      function openCostModal(existingCost) {
+        const isEdit = Boolean(existingCost);
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        const cost = isEdit ? Object.assign({}, existingCost) : { type: 'fijo', period: 'mensual', amortization: 6, groupId: state.activeCostGroupId || null };
+        cost.groupId = cost.groupId || null;
+        cost.period = cost.period || 'mensual';
+        const groupOptions = state.costGroups.map((group) => `<option value="${group.id}" ${group.id === (cost.groupId || '') ? 'selected' : ''}>${group.name}</option>`).join('');
+        overlay.innerHTML = `
+          <div class="modal" role="dialog" aria-modal="true">
+            <h3>${isEdit ? 'Editar costo' : 'Nuevo costo'}</h3>
+            <label>
+              <span>Nombre</span>
+              <input type="text" id="costName" value="${cost.name || ''}" placeholder="Ej.: Alquiler" />
+            </label>
+            <label>
+              <span>Tipo</span>
+              <select id="costType">
+                <option value="fijo" ${cost.type !== 'inversion' ? 'selected' : ''}>Fijo recurrente</option>
+                <option value="inversion" ${cost.type === 'inversion' ? 'selected' : ''}>Inversión amortizable</option>
+              </select>
+            </label>
+            <label>
+              <span>Monto ($)</span>
+              <input type="number" id="costAmount" min="0" step="0.01" value="${cost.amount || ''}" />
+            </label>
+            <label>
+              <span>Período base</span>
+              <select id="costPeriod">
+                <option value="diario" ${cost.period === 'diario' ? 'selected' : ''}>Diario</option>
+                <option value="semanal" ${cost.period === 'semanal' ? 'selected' : ''}>Semanal</option>
+                <option value="mensual" ${cost.period === 'mensual' ? 'selected' : ''}>Mensual</option>
+                <option value="anual" ${cost.period === 'anual' ? 'selected' : ''}>Anual</option>
+              </select>
+            </label>
+            <label>
+              <span>Grupo de costos</span>
+              <select id="costGroupAssignment">
+                <option value="" ${(cost.groupId ? '' : 'selected')}>Sin grupo</option>
+                ${groupOptions}
+              </select>
+            </label>
+            <label id="amortizationRow" style="display:${cost.type === 'inversion' ? 'block' : 'none'};">
+              <span>Plazo de amortización (en períodos)</span>
+              <input type="number" id="costAmortization" min="1" step="1" value="${cost.amortization || 6}" />
+            </label>
+            <div class="modal-actions">
+              <button class="cancel">Cancelar</button>
+              <button class="confirm">Guardar</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        const inputs = {
+          name: overlay.querySelector('#costName'),
+          type: overlay.querySelector('#costType'),
+          amount: overlay.querySelector('#costAmount'),
+          period: overlay.querySelector('#costPeriod'),
+          amortization: overlay.querySelector('#costAmortization'),
+          amortizationRow: overlay.querySelector('#amortizationRow'),
+          group: overlay.querySelector('#costGroupAssignment')
+        };
+        inputs.type.addEventListener('change', () => {
+          inputs.amortizationRow.style.display = inputs.type.value === 'inversion' ? 'block' : 'none';
+        });
+        const close = () => document.body.removeChild(overlay);
+        overlay.addEventListener('click', (event) => {
+          if (event.target === overlay) close();
+        });
+        overlay.querySelector('.cancel').addEventListener('click', close);
+        overlay.querySelector('.confirm').addEventListener('click', async () => {
+          const name = inputs.name.value.trim();
+          const amount = parseFloat(inputs.amount.value);
+          if (!name) {
+            await openAlertModal({
+              title: 'Dato requerido',
+              message: 'Ingresá un nombre para el costo.'
+            }); // REPLACED: native dialog → internal modal
+            return;
+          }
+          if (isNaN(amount) || amount <= 0) {
+            await openAlertModal({
+              title: 'Monto inválido',
+              message: 'Ingresá un monto válido.'
+            }); // REPLACED: native dialog → internal modal
+            return;
+          }
+          const costData = {
+            id: isEdit ? existingCost.id : `cost_${Date.now()}`,
+            name,
+            type: inputs.type.value,
+            amount,
+            period: inputs.period.value,
+            amortization: inputs.type.value === 'inversion' ? Math.max(1, parseInt(inputs.amortization.value, 10) || 1) : null,
+            groupId: inputs.group.value || null
+          };
+          if (isEdit) {
+            const index = state.costs.findIndex(c => c.id === existingCost.id);
+            state.costs[index] = costData;
+          } else {
+            state.costs.push(costData);
+          }
+          saveState();
+          renderCosts();
+          updateCostSummary();
+          renderResults([]);
+          close();
+          showToast('Costo guardado');
+        });
+      }
+
+      async function deleteCost(id) {
+        const confirmed = await openConfirmModal({
+          title: 'Eliminar costo',
+          message: '¿Eliminar este costo?',
+          confirmText: 'Eliminar',
+          cancelText: 'Cancelar'
+        }); // REPLACED: native dialog → internal modal
+        if (!confirmed) return;
+        state.costs = state.costs.filter(c => c.id !== id);
+        saveState();
+        renderCosts();
+        updateCostSummary();
+        renderResults([]);
+        showToast('Costo eliminado');
+      }
+
+      function toggleCostDetailPanel() {
+        const panel = elements.costDetailPanel;
+        const arrow = elements.costDetailToggle.querySelector('span:last-child');
+        const isOpen = panel.classList.toggle('open');
+        elements.costDetailToggleLabel.textContent = isOpen ? 'Ocultar detalle por costo' : 'Ver detalle por costo';
+        if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
+      }
+
+      function prorateCostAmount(cost, targetPeriod) {
+        const baseAmount = cost.type === 'inversion' ? (cost.amount / (cost.amortization || 1)) : cost.amount;
+        const factor = (PERIOD_CONVERSION[cost.period] && PERIOD_CONVERSION[cost.period][targetPeriod]) || 1;
+        return baseAmount * factor;
+      }
+
+      function calculateTotalCost() {
+        const costs = getActiveCosts();
+        if (!costs.length) return 0;
+        return costs.reduce((acc, cost) => acc + prorateCostAmount(cost, state.settings.period), 0);
+      }
+
+      function updateCostSummary() {
+        const total = calculateTotalCost();
+        const periodLabel = PERIOD_LABELS[state.settings.period] || 'Seleccionado';
+        elements.currentPeriodLabel.textContent = periodLabel.toLowerCase();
+        elements.totalCostDisplay.textContent = currencyFormatter.format(total);
+        renderCostDetailPanel();
+      }
+
+      function renderCostDetailPanel() {
+        const panel = elements.costDetailPanel;
+        panel.innerHTML = '';
+        const costs = getActiveCosts();
+        if (!costs.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = 'Cargá costos para ver el detalle.';
+          panel.appendChild(empty);
+          return;
+        }
+        const total = calculateTotalCost();
+        if (!lastResults.length) {
+          const hint = document.createElement('div');
+          hint.className = 'inline-chip';
+          hint.textContent = 'Calculá una opción para estimar la cobertura por costo.';
+          panel.appendChild(hint);
+        }
+        costs.forEach((cost) => {
+          const card = document.createElement('div');
+          card.className = 'cost-breakdown-card';
+          const prorated = prorateCostAmount(cost, state.settings.period);
+          const periodLabel = PERIOD_LABELS[cost.period] || 'Sin período';
+          card.innerHTML = `
+            <h4>${cost.name}</h4>
+            <div>Monto prorrateado: <strong>${currencyFormatter.format(prorated)}</strong></div>
+            <div>Período base: ${periodLabel}${cost.type === 'inversion' ? ` · Amortiza en ${cost.amortization || 1} períodos` : ''}</div>
+          `;
+          if (lastResults.length && total > 0) {
+            const share = prorated / total;
+            const label = document.createElement('div');
+            label.style.marginTop = '12px';
+            label.style.fontWeight = '600';
+            label.style.color = 'var(--muted-text)';
+            label.textContent = 'Cobertura estimada usando el último cálculo:';
+            const list = document.createElement('ul');
+            list.style.listStyle = 'none';
+            list.style.padding = '0';
+            list.style.margin = '8px 0 0';
+            list.style.display = 'flex';
+            list.style.flexDirection = 'column';
+            list.style.gap = '6px';
+            lastResults[0].items.forEach((item) => {
+              const units = item.units * share;
+              const boxes = units / item.product.unitsPerBox;
+              const li = document.createElement('li');
+              li.textContent = `${item.product.name}: ${formatUnits(units)} u (${formatBoxes(boxes)} cajas)`;
+              list.appendChild(li);
+            });
+            card.appendChild(label);
+            card.appendChild(list);
+          }
+          panel.appendChild(card);
+        });
+      }
+
+      function updateModeButtons() {
+        document.querySelectorAll('.mode-selector button').forEach((button) => {
+          button.classList.toggle('active', button.dataset.mode === state.settings.mode);
+        });
+      }
+
+      function updateModePanels() {
+        document.querySelectorAll('.mode-panel').forEach((panel) => {
+          panel.classList.toggle('active', panel.dataset.panel === state.settings.mode);
+        });
+      }
+
+      function handleSingleCalculation() {
+        state.settings.mode = 'single';
+        updateModeButtons();
+        updateModePanels();
+        const product = state.products.find(p => p.id === state.settings.selectedSkuId) || state.products[0];
+        if (!product) return;
+        const mix = { [product.id]: 1 };
+        const result = buildResultFromMix(`Producto único · ${product.name}`, mix);
+        renderResults([result]);
+      }
+
+      function handleMixCalculation() {
+        state.settings.mode = 'mix';
+        updateModeButtons();
+        updateModePanels();
+        const mix = {};
+        state.products.forEach((product) => {
+          const pct = state.settings.mix[product.id] || 0;
+          if (pct > 0) {
+            mix[product.id] = pct / 100;
+          }
+        });
+        const result = buildResultFromMix('Mix manual', mix);
+        renderResults([result]);
+      }
+
+      function handleGenerateOptions() {
+        state.settings.mode = 'auto';
+        updateModeButtons();
+        updateModePanels();
+        const combos = buildAutomaticCombinations();
+        const results = combos.map((combo) => buildResultFromMix(combo.title, combo.mix));
+        renderResults(results);
+      }
+
+      function buildAutomaticCombinations() {
+        const enriched = state.products.map((product) => {
+          const pricing = buildPricing(product);
+          const marginUnit = pricing.netUnit - pricing.costUnit;
+          return { product, pricing, marginUnit };
+        });
+        const byMargin = [...enriched].sort((a, b) => (b.marginUnit - a.marginUnit));
+        const byPrice = [...enriched].sort((a, b) => (a.pricing.priceUnit - b.pricing.priceUnit));
+        const combos = [];
+        const usedLetters = new Set();
+        const nextLetter = () => {
+          let code = 65;
+          while (usedLetters.has(String.fromCharCode(code))) {
+            code += 1;
+          }
+          return String.fromCharCode(code);
+        };
+        const pushCombo = (letter, description, mix) => {
+          if (!mix) return;
+          const letterToUse = letter || nextLetter();
+          combos.push({ title: `Opción ${letterToUse} · ${description}`, mix });
+          usedLetters.add(letterToUse);
+        };
+        if (byMargin[0]) {
+          pushCombo('A', 'Mayor margen', buildMixObject([{ entry: byMargin[0], pct: 1 }]));
+        }
+        if (byPrice[0]) {
+          pushCombo('B', 'Menor precio final', buildMixObject([{ entry: byPrice[0], pct: 1 }]));
+        }
+        if (byMargin[0]) {
+          const second = byMargin[1] || byMargin[0];
+          pushCombo('C', '50/50 mejores márgenes', buildMixObject([{ entry: byMargin[0], pct: 0.5 }, { entry: second, pct: 0.5 }]));
+        }
+        const equalSlice = byMargin.slice(0, Math.min(4, enriched.length));
+        if (equalSlice.length) {
+          const pct = 1 / equalSlice.length;
+          pushCombo('D', 'Mix equilibrado', buildMixObject(equalSlice.map(entry => ({ entry, pct }))));
+        }
+        if (byMargin[0]) {
+          const third = byMargin[2] || byMargin[1] || byMargin[0];
+          const fourth = byMargin[3] || third;
+          pushCombo('E', 'Foco en margen + complemento', buildMixObject([{ entry: byMargin[0], pct: 0.6 }, { entry: third, pct: 0.2 }, { entry: fourth, pct: 0.2 }]));
+        }
+        if (byMargin.length) {
+          const topThree = [byMargin[0], byMargin[1] || byMargin[0], byMargin[2] || byMargin[1] || byMargin[0]];
+          pushCombo('F', 'Top 3 escalonado', buildMixObject([{ entry: topThree[0], pct: 0.5 }, { entry: topThree[1], pct: 0.3 }, { entry: topThree[2], pct: 0.2 }]));
+        }
+        if (byPrice.length > 1) {
+          pushCombo('G', 'Precio competitivo', buildMixObject([{ entry: byPrice[0], pct: 0.6 }, { entry: byPrice[1], pct: 0.4 }]));
+        }
+        if (enriched.length) {
+          const pct = 1 / enriched.length;
+          pushCombo('H', 'Diversificación total', buildMixObject(enriched.map(entry => ({ entry, pct }))));
+        }
+        while (combos.length < 8 && enriched.length) {
+          const next = enriched[combos.length % enriched.length];
+          pushCombo(null, 'Alternativa', buildMixObject([{ entry: next, pct: 1 }]));
+        }
+        return combos.slice(0, 8);
+      }
+
+      function buildMixObject(definitions) {
+        const totals = {};
+        definitions.forEach((def) => {
+          if (!def || !def.entry) return;
+          const id = def.entry.product.id;
+          totals[id] = (totals[id] || 0) + def.pct;
+        });
+        const sum = Object.values(totals).reduce((acc, val) => acc + val, 0) || 1;
+        const normalized = {};
+        Object.keys(totals).forEach((id) => {
+          normalized[id] = totals[id] / sum;
+        });
+        return normalized;
+      }
+
+      function buildResultFromMix(title, mixMap) {
+        const activeCosts = getActiveCosts();
+        if (!activeCosts.length) {
+          return { title, error: 'Cargá costos para poder calcular.' };
+        }
+        const entries = Object.keys(mixMap || {}).map((id) => {
+          const product = state.products.find(p => p.id === id);
+          if (!product) return null;
+          const fraction = mixMap[id];
+          const pricing = buildPricing(product);
+          const marginUnit = pricing.netUnit - pricing.costUnit;
+          return { product, fraction, pricing, marginUnit };
+        }).filter(Boolean);
+        if (!entries.length) {
+          return { title, error: 'No hay productos seleccionados en esta combinación.' };
+        }
+        const totalFraction = entries.reduce((acc, entry) => acc + entry.fraction, 0);
+        if (totalFraction <= 0) {
+          return { title, error: 'La combinación no es válida.' };
+        }
+        entries.forEach((entry) => { entry.fraction = entry.fraction / totalFraction; });
+        const targetBase = calculateTotalCost();
+        if (targetBase <= 0) {
+          return { title, message: 'El objetivo actual es 0. No se requieren unidades.', items: [], totalRevenue: 0, totalRevenueExact: 0, totalRevenueReal: 0, goalAmount: 0, baseCost: 0, warnings: [], totalUnits: 0, totalUnitsExact: 0, totalUnitsReal: 0 };
+        }
+        const marginSum = entries.reduce((acc, entry) => acc + (entry.marginUnit * entry.fraction), 0);
+        if (marginSum <= 0) {
+          return { title, error: 'La combinación no es viable: margen neto no positivo.' };
+        }
+        const totalUnits = targetBase / marginSum;
+        const items = entries.map((entry) => {
+          const units = totalUnits * entry.fraction;
+          const boxes = units / entry.product.unitsPerBox;
+          const roundedBoxes = Math.ceil(boxes);
+          const roundedUnits = roundedBoxes * entry.product.unitsPerBox;
+          const marginPct = entry.pricing.netUnit > 0 ? (entry.marginUnit / entry.pricing.netUnit) : 0;
+          const minWarning = units < entry.product.minUnits;
+          return {
+            product: entry.product,
+            units,
+            boxes,
+            roundedUnits,
+            roundedBoxes,
+            pricing: entry.pricing,
+            marginUnit: entry.marginUnit,
+            marginPct,
+            minWarning
+          };
+        });
+        const totalRevenue = items.reduce((acc, item) => acc + (item.units * item.pricing.priceUnit), 0);
+        const totalRevenueReal = items.reduce((acc, item) => acc + (item.roundedUnits * item.pricing.priceUnit), 0);
+        const totalUnitsReal = items.reduce((acc, item) => acc + item.roundedUnits, 0);
+        const warnings = [];
+        items.forEach((item) => {
+          if (item.marginPct < 0.35) {
+            warnings.push(`⚠️ ${item.product.name}: margen ${numberFormatter.format(item.marginPct * 100)}% por debajo del 35%.`);
+          }
+          if (item.minWarning) {
+            const minInfo = item.product.unitsPerBox === 50 ? '2 cajas de 50 (100 u)' : '1 caja de 100 u';
+            warnings.push(`⚠️ ${item.product.name}: el mínimo operativo es 100 u (${minInfo}).`);
+          }
+        });
+        const result = {
+          title,
+          items,
+          totalRevenue,
+          totalRevenueExact: totalRevenue,
+          totalRevenueReal,
+          goalAmount: targetBase,
+          baseCost: targetBase,
+          warnings,
+          totalUnits,
+          totalUnitsExact: totalUnits,
+          totalUnitsReal,
+          mixMap
+        };
+        result.copyText = buildCopyText(result);
+        return result;
+      }
+
+      function buildCopyText(result) {
+        const lines = [];
+        lines.push(`Opción: ${result.title}`);
+        lines.push(`Objetivo a cubrir: ${currencyFormatter.format(result.goalAmount)}`);
+        const exact = typeof result.totalRevenueExact === 'number' ? result.totalRevenueExact : result.totalRevenue;
+        const real = typeof result.totalRevenueReal === 'number' ? result.totalRevenueReal : exact;
+        lines.push(`Facturación estimada: ${currencyFormatter.format(exact)}`);
+        lines.push(`Facturación real: ${currencyFormatter.format(real)}`);
+        result.items.forEach((item) => {
+          lines.push(`- ${item.product.name}: Real ${formatInteger(item.roundedBoxes)} cajas (${formatInteger(item.roundedUnits)} u) · Exacta ${formatBoxes(item.boxes)} cajas (${formatUnits(item.units)} u)`);
+        });
+        if (result.warnings && result.warnings.length) {
+          lines.push('Alertas:');
+          result.warnings.forEach((warning) => lines.push(`  ${warning}`));
+        }
+        return lines.join('\n');
+      }
+
+      function renderResults(results) {
+        elements.resultsContainer.innerHTML = '';
+        if (!results || !results.length) {
+          const message = document.createElement('div');
+          message.className = 'empty-state';
+          message.textContent = state.costs.length ? 'Elegí un modo y calculá para ver resultados.' : 'Agregá costos para comenzar.';
+          elements.resultsContainer.appendChild(message);
+          lastResults = [];
+          renderCostDetailPanel();
+          return;
+        }
+        results.forEach((result, index) => {
+          const card = document.createElement('div');
+          card.className = 'result-card';
+          const title = document.createElement('h3');
+          title.textContent = result.title || `Resultado ${index + 1}`;
+          card.appendChild(title);
+          if (result.error) {
+            const error = document.createElement('div');
+            error.className = 'alert';
+            error.textContent = result.error;
+            card.appendChild(error);
+          } else {
+            const body = document.createElement('div');
+            body.className = 'result-body';
+            if (result.items && result.items.length) {
+              const list = document.createElement('ul');
+              result.items.forEach((item) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                  <strong>${item.product.name}</strong>
+                  <div class="result-quantity">
+                    <div class="result-quantity-real">Real: ${formatInteger(item.roundedBoxes)} cajas (${formatInteger(item.roundedUnits)} unidades)</div>
+                    <div class="result-quantity-exact">Exacta: ${formatBoxes(item.boxes)} cajas (${formatUnits(item.units)} unidades)</div>
+                  </div>
+                `;
+                list.appendChild(li);
+              });
+              body.appendChild(list);
+            }
+            if (result.message) {
+              const info = document.createElement('div');
+              info.className = 'empty-state';
+              info.textContent = result.message;
+              body.appendChild(info);
+            }
+            const footer = document.createElement('div');
+            footer.className = 'result-footer';
+            if (typeof result.goalAmount === 'number') {
+              const goal = document.createElement('div');
+              goal.innerHTML = `<strong>Objetivo a cubrir:</strong> ${currencyFormatter.format(result.goalAmount)}`;
+              footer.appendChild(goal);
+            }
+            if (typeof result.totalRevenueExact === 'number' || typeof result.totalRevenue === 'number') {
+              const revenue = document.createElement('div');
+              const exact = typeof result.totalRevenueExact === 'number' ? result.totalRevenueExact : result.totalRevenue;
+              revenue.innerHTML = `<strong>Facturación estimada:</strong> ${currencyFormatter.format(exact)}`;
+              footer.appendChild(revenue);
+            }
+            if (typeof result.totalRevenueReal === 'number') {
+              const revenueReal = document.createElement('div');
+              revenueReal.innerHTML = `<strong>Facturación real:</strong> ${currencyFormatter.format(result.totalRevenueReal)}`;
+              footer.appendChild(revenueReal);
+            }
+            if (result.items && result.items.length) {
+              const copyBtn = document.createElement('button');
+              copyBtn.textContent = 'Copiar resultado';
+              copyBtn.addEventListener('click', () => copyResult(result));
+              footer.appendChild(copyBtn);
+            }
+            if (result.warnings && result.warnings.length) {
+              const warningBlock = document.createElement('div');
+              warningBlock.className = 'warnings';
+              result.warnings.forEach((warning) => {
+                const span = document.createElement('span');
+                span.textContent = warning;
+                warningBlock.appendChild(span);
+              });
+              footer.appendChild(warningBlock);
+            }
+            body.appendChild(footer);
+            card.appendChild(body);
+          }
+          elements.resultsContainer.appendChild(card);
+        });
+        lastResults = results.filter((result) => !result.error && result.items && result.items.length);
+        renderCostDetailPanel();
+      }
+
+      async function copyResult(result) {
+        const text = result.copyText || buildCopyText(result);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast('Resultado copiado');
+          } catch (error) {
+            await fallbackCopy(text);
+          }
+        } else {
+          await fallbackCopy(text);
+        }
+      }
+
+      async function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('Resultado copiado');
+        } catch (error) {
+          await openAlertModal({
+            title: 'Copiá el texto manualmente',
+            message: 'No se pudo copiar automáticamente, copiá el texto manualmente.'
+          }); // REPLACED: native dialog → internal modal
+        }
+        document.body.removeChild(textarea);
+      }
+
+      function formatUnits(value) {
+        return numberFormatter.format(value);
+      }
+
+      function formatBoxes(value) {
+        return numberFormatter.format(value);
+      }
+
+      function formatInteger(value) {
+        return integerFormatter.format(value || 0);
+      }
+
+      function showToast(message) {
+        elements.toast.textContent = message;
+        elements.toast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+          elements.toast.classList.remove('show');
+        }, 2600);
+      }
+
+      window.addEventListener('beforeunload', saveState);
+    })();
+  </script>
+</body>
+</html>
