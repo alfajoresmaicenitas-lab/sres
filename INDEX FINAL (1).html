@@ -215,6 +215,67 @@
       font-size: 0.8rem;
     }
 
+    .group-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .group-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(194, 125, 63, 0.16);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      color: var(--accent-dark);
+    }
+
+    .group-chip button {
+      border: none;
+      background: transparent;
+      color: inherit;
+      font-size: 0.9em;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .group-chip.group-chip-empty {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--muted-text);
+    }
+
+    .group-checkboxes {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .group-checkboxes label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: var(--text-color);
+    }
+
+    .group-checkboxes input[type="checkbox"] {
+      width: auto;
+      accent-color: var(--accent);
+    }
+
+    .group-checkboxes label span {
+      margin: 0;
+      display: inline;
+      font-weight: 500;
+      color: inherit;
+    }
+
     .cost-summary {
       background: rgba(255,255,255,0.8);
       border-radius: 14px;
@@ -227,9 +288,20 @@
 
     .summary-top {
       display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .summary-row {
+      display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
+      font-size: 0.95rem;
+    }
+
+    .summary-row strong {
+      font-size: 1rem;
     }
 
     .toggle {
@@ -678,8 +750,18 @@
       <div id="costsList" class="card-grid"></div>
       <div class="cost-summary">
         <div class="summary-top">
-          <strong>Total prorrateado (<span id="currentPeriodLabel"></span>):</strong>
-          <span id="totalCostDisplay">$0,00</span>
+          <div class="summary-row">
+            <strong>Total prorrateado (<span id="currentPeriodLabel"></span>):</strong>
+            <span id="totalCostDisplay">$0,00</span>
+          </div>
+          <div class="summary-row">
+            <span>Disponible:</span>
+            <span id="availableCashDisplay">$0,00</span>
+          </div>
+          <div class="summary-row">
+            <span>Objetivo neto:</span>
+            <span id="netTargetDisplay">$0,00</span>
+          </div>
         </div>
         <div class="collapsible">
           <button type="button" id="toggleCostDetail">
@@ -703,6 +785,12 @@
               <option value="mensual">Mensual</option>
               <option value="anual">Anual</option>
             </select>
+          </label>
+        </div>
+        <div class="parameter-card">
+          <label>
+            <span>Dinero ya disponible ($)</span>
+            <input type="number" id="availableCashInput" min="0" step="100" />
           </label>
         </div>
         <div class="parameter-card">
@@ -785,6 +873,7 @@
 
       let state = loadState();
       let lastResults = [];
+      let lastModeUsed = null;
       let toastTimeout = null;
 
       const modalRoot = ensureModalRoot();
@@ -1079,6 +1168,7 @@
         commissionFields: document.getElementById('commissionFields'),
         commissionPct: document.getElementById('commissionPct'),
         commissionFixed: document.getElementById('commissionFixed'),
+        availableCashInput: document.getElementById('availableCashInput'),
         resultsContainer: document.getElementById('resultsContainer'),
         singleSkuSelect: document.getElementById('singleSkuSelect'),
         mixSliders: document.getElementById('mixSliders'),
@@ -1092,6 +1182,8 @@
         renameGroupBtn: document.getElementById('renameGroupBtn'),
         deleteGroupBtn: document.getElementById('deleteGroupBtn'),
         totalCostDisplay: document.getElementById('totalCostDisplay'),
+        availableCashDisplay: document.getElementById('availableCashDisplay'),
+        netTargetDisplay: document.getElementById('netTargetDisplay'),
         currentPeriodLabel: document.getElementById('currentPeriodLabel'),
         costDetailPanel: document.getElementById('costDetailPanel'),
         costDetailToggle: document.getElementById('toggleCostDetail'),
@@ -1113,6 +1205,8 @@
           merged.costGroups = Array.isArray(parsed.costGroups) ? parsed.costGroups.map(copyCostGroup).filter(Boolean) : [];
           merged.activeCostGroupId = parsed.activeCostGroupId && merged.costGroups.some(group => group.id === parsed.activeCostGroupId) ? parsed.activeCostGroupId : null;
           merged.settings = Object.assign({}, getDefaultState().settings, parsed.settings || {});
+          const available = Number(merged.settings.availableCash);
+          merged.settings.availableCash = isNaN(available) || available < 0 ? 0 : available;
           ensureMixCompleteness(merged);
           return merged;
         } catch (error) {
@@ -1144,6 +1238,7 @@
             commissions: { enabled: false, pct: 0, fixed: 0 },
             mode: 'single',
             selectedSkuId: DEFAULT_PRODUCTS[0].id,
+            availableCash: 0,
             mix
           }
         };
@@ -1168,7 +1263,16 @@
       function copyCost(cost) {
         if (!cost) return null;
         const cloned = Object.assign({}, cost);
-        cloned.groupId = cloned.groupId || null;
+        let groups;
+        if (Array.isArray(cloned.groupIds)) {
+          groups = cloned.groupIds;
+        } else if (cloned.groupId) {
+          groups = [cloned.groupId];
+        } else {
+          groups = [];
+        }
+        cloned.groupIds = Array.from(new Set(groups.filter(Boolean).map(String)));
+        delete cloned.groupId;
         return cloned;
       }
 
@@ -1186,6 +1290,7 @@
         updateModeButtons();
         updateModePanels();
         updateCostSummary();
+        lastModeUsed = null;
         renderResults([]);
       }
 
@@ -1210,12 +1315,16 @@
           state.settings.commissions.fixed = parseFloat(ev.target.value) || 0;
           saveState();
         });
+        if (elements.availableCashInput) {
+          elements.availableCashInput.addEventListener('input', handleAvailableCashChange);
+        }
         elements.costGroupSelect.addEventListener('change', (ev) => {
           const groupId = ev.target.value || null;
           state.activeCostGroupId = groupId;
           saveState();
           renderCosts();
           updateCostSummary();
+          lastModeUsed = null;
           renderResults([]);
           renderGroupControls();
         });
@@ -1247,6 +1356,7 @@
         localStorage.removeItem(STORAGE_KEY);
         state = getDefaultState();
         lastResults = [];
+        lastModeUsed = null;
         renderParameters();
         renderProducts();
         renderGroupControls();
@@ -1267,6 +1377,9 @@
         elements.commissionFields.style.display = state.settings.commissions.enabled ? 'flex' : 'none';
         elements.commissionPct.value = state.settings.commissions.pct || 0;
         elements.commissionFixed.value = state.settings.commissions.fixed || 0;
+        if (elements.availableCashInput) {
+          elements.availableCashInput.value = state.settings.availableCash || 0;
+        }
       }
 
       function renderProducts() {
@@ -1443,7 +1556,7 @@
 
       function getActiveCosts() {
         if (!state.activeCostGroupId) return state.costs.slice();
-        return state.costs.filter(cost => cost.groupId === state.activeCostGroupId);
+        return state.costs.filter(cost => Array.isArray(cost.groupIds) && cost.groupIds.includes(state.activeCostGroupId));
       }
 
       function renderCosts() {
@@ -1457,7 +1570,6 @@
           list.appendChild(empty);
           return;
         }
-        const showGroupBadge = !state.activeCostGroupId;
         const activePeriodLabel = (PERIOD_LABELS[state.settings.period] || 'Seleccionado').toLowerCase();
         costs.forEach((cost) => {
           const card = document.createElement('div');
@@ -1465,7 +1577,6 @@
           const amountText = currencyFormatter.format(cost.amount);
           const amortizationText = cost.type === 'inversion' ? `Amortiza en ${cost.amortization || 1} períodos` : 'Fijo recurrente';
           const prorated = currencyFormatter.format(prorateCostAmount(cost, state.settings.period));
-          const group = cost.groupId ? state.costGroups.find(g => g.id === cost.groupId) : null;
           const periodLabel = PERIOD_LABELS[cost.period] || 'Sin período';
           card.innerHTML = `
             <h3>${cost.name}</h3>
@@ -1473,14 +1584,35 @@
               <span class="inline-chip">${cost.type === 'inversion' ? 'Inversión' : 'Fijo'}</span>
               <span>${amountText} (${periodLabel})</span>
               <span>${amortizationText}</span>
-              ${showGroupBadge && group ? `<span class="inline-chip">Grupo: ${group.name}</span>` : ''}
             </div>
+            <div class="group-chips" data-group-chips></div>
             <div>Equivale a <strong>${prorated}</strong> por período ${activePeriodLabel}.</div>
             <div class="actions">
               <button class="edit">Editar</button>
               <button class="delete">Eliminar</button>
             </div>
           `;
+          const chipsContainer = card.querySelector('[data-group-chips]');
+          const validGroupIds = Array.isArray(cost.groupIds)
+            ? Array.from(new Set(cost.groupIds.filter((id) => state.costGroups.some(group => group.id === id))))
+            : [];
+          if (validGroupIds.length) {
+            validGroupIds.forEach((groupId) => {
+              const group = state.costGroups.find(g => g.id === groupId);
+              if (!group) return;
+              const chip = document.createElement('span');
+              chip.className = 'group-chip';
+              chip.innerHTML = `Grupo: ${group.name} <button type="button" aria-label="Quitar ${group.name}">×</button>`;
+              const removeBtn = chip.querySelector('button');
+              removeBtn.addEventListener('click', () => removeGroupFromCost(cost.id, group.id));
+              chipsContainer.appendChild(chip);
+            });
+          } else {
+            const chip = document.createElement('span');
+            chip.className = 'group-chip group-chip-empty';
+            chip.textContent = 'Sin grupo';
+            chipsContainer.appendChild(chip);
+          }
           card.querySelector('.edit').addEventListener('click', () => openCostModal(cost));
           card.querySelector('.delete').addEventListener('click', () => deleteCost(cost.id));
           list.appendChild(card);
@@ -1582,7 +1714,11 @@
         }); // REPLACED: native dialog → internal modal
         if (!confirmed) return;
         state.costGroups = state.costGroups.filter(g => g.id !== group.id);
-        state.costs = state.costs.map((cost) => cost.groupId === group.id ? Object.assign({}, cost, { groupId: null }) : cost);
+        state.costs = state.costs.map((cost) => {
+          const currentIds = Array.isArray(cost.groupIds) ? cost.groupIds : [];
+          if (!currentIds.includes(group.id)) return cost;
+          return Object.assign({}, cost, { groupIds: currentIds.filter(id => id !== group.id) });
+        });
         state.activeCostGroupId = null;
         saveState();
         renderGroupControls();
@@ -1595,10 +1731,18 @@
         const isEdit = Boolean(existingCost);
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
-        const cost = isEdit ? Object.assign({}, existingCost) : { type: 'fijo', period: 'mensual', amortization: 6, groupId: state.activeCostGroupId || null };
-        cost.groupId = cost.groupId || null;
+        const defaultGroups = state.activeCostGroupId ? [state.activeCostGroupId] : [];
+        const cost = isEdit ? Object.assign({}, existingCost) : { type: 'fijo', period: 'mensual', amortization: 6, groupIds: defaultGroups };
         cost.period = cost.period || 'mensual';
-        const groupOptions = state.costGroups.map((group) => `<option value="${group.id}" ${group.id === (cost.groupId || '') ? 'selected' : ''}>${group.name}</option>`).join('');
+        cost.groupIds = Array.isArray(cost.groupIds)
+          ? Array.from(new Set(cost.groupIds.filter((id) => id && state.costGroups.some(group => group.id === id))))
+          : [];
+        const groupCheckboxesHtml = state.costGroups.map((group) => `
+              <label>
+                <input type="checkbox" value="${group.id}" data-cost-group-checkbox ${cost.groupIds.includes(group.id) ? 'checked' : ''} />
+                <span>${group.name}</span>
+              </label>
+            `).join('');
         overlay.innerHTML = `
           <div class="modal" role="dialog" aria-modal="true">
             <h3>${isEdit ? 'Editar costo' : 'Nuevo costo'}</h3>
@@ -1626,13 +1770,16 @@
                 <option value="anual" ${cost.period === 'anual' ? 'selected' : ''}>Anual</option>
               </select>
             </label>
-            <label>
-              <span>Grupo de costos</span>
-              <select id="costGroupAssignment">
-                <option value="" ${(cost.groupId ? '' : 'selected')}>Sin grupo</option>
-                ${groupOptions}
-              </select>
-            </label>
+            <div>
+              <span style="display:block; font-size:0.9rem; font-weight:600; color: var(--muted-text);">Grupos de costos</span>
+              <div class="group-checkboxes">
+                <label>
+                  <input type="checkbox" id="costGroupNone" ${cost.groupIds.length ? '' : 'checked'} />
+                  <span>Sin grupo</span>
+                </label>
+                ${groupCheckboxesHtml}
+              </div>
+            </div>
             <label id="amortizationRow" style="display:${cost.type === 'inversion' ? 'block' : 'none'};">
               <span>Plazo de amortización (en períodos)</span>
               <input type="number" id="costAmortization" min="1" step="1" value="${cost.amortization || 6}" />
@@ -1650,9 +1797,33 @@
           amount: overlay.querySelector('#costAmount'),
           period: overlay.querySelector('#costPeriod'),
           amortization: overlay.querySelector('#costAmortization'),
-          amortizationRow: overlay.querySelector('#amortizationRow'),
-          group: overlay.querySelector('#costGroupAssignment')
+          amortizationRow: overlay.querySelector('#amortizationRow')
         };
+        const noneCheckbox = overlay.querySelector('#costGroupNone');
+        const groupCheckboxes = Array.from(overlay.querySelectorAll('[data-cost-group-checkbox]'));
+        const syncNoneCheckbox = () => {
+          if (!noneCheckbox) return;
+          const anySelected = groupCheckboxes.some((checkbox) => checkbox.checked);
+          noneCheckbox.checked = !anySelected;
+        };
+        if (noneCheckbox) {
+          noneCheckbox.addEventListener('change', () => {
+            if (noneCheckbox.checked) {
+              groupCheckboxes.forEach((checkbox) => { checkbox.checked = false; });
+            }
+            syncNoneCheckbox();
+          });
+        }
+        groupCheckboxes.forEach((checkbox) => {
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked && noneCheckbox) {
+              noneCheckbox.checked = false;
+            } else {
+              syncNoneCheckbox();
+            }
+          });
+        });
+        syncNoneCheckbox();
         inputs.type.addEventListener('change', () => {
           inputs.amortizationRow.style.display = inputs.type.value === 'inversion' ? 'block' : 'none';
         });
@@ -1678,6 +1849,8 @@
             }); // REPLACED: native dialog → internal modal
             return;
           }
+          const selectedGroups = groupCheckboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value);
+          const groupIds = (!selectedGroups.length || (noneCheckbox && noneCheckbox.checked)) ? [] : Array.from(new Set(selectedGroups));
           const costData = {
             id: isEdit ? existingCost.id : `cost_${Date.now()}`,
             name,
@@ -1685,7 +1858,7 @@
             amount,
             period: inputs.period.value,
             amortization: inputs.type.value === 'inversion' ? Math.max(1, parseInt(inputs.amortization.value, 10) || 1) : null,
-            groupId: inputs.group.value || null
+            groupIds
           };
           if (isEdit) {
             const index = state.costs.findIndex(c => c.id === existingCost.id);
@@ -1718,12 +1891,38 @@
         showToast('Costo eliminado');
       }
 
+      function removeGroupFromCost(costId, groupId) {
+        const cost = state.costs.find(c => c.id === costId);
+        if (!cost) return;
+        const currentIds = Array.isArray(cost.groupIds) ? cost.groupIds.slice() : [];
+        const filtered = currentIds.filter(id => id !== groupId);
+        if (filtered.length === currentIds.length) return;
+        cost.groupIds = filtered;
+        saveState();
+        renderCosts();
+        updateCostSummary();
+        renderResults([]);
+      }
+
       function toggleCostDetailPanel() {
         const panel = elements.costDetailPanel;
         const arrow = elements.costDetailToggle.querySelector('span:last-child');
         const isOpen = panel.classList.toggle('open');
         elements.costDetailToggleLabel.textContent = isOpen ? 'Ocultar detalle por costo' : 'Ver detalle por costo';
         if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
+      }
+
+      function handleAvailableCashChange(event) {
+        const source = event && event.target ? event.target : elements.availableCashInput;
+        const value = source ? parseFloat(source.value) : NaN;
+        const numeric = isNaN(value) || value < 0 ? 0 : value;
+        state.settings.availableCash = numeric;
+        if (elements.availableCashInput) {
+          elements.availableCashInput.value = numeric;
+        }
+        saveState();
+        updateCostSummary();
+        recalculateIfPossible();
       }
 
       function prorateCostAmount(cost, targetPeriod) {
@@ -1738,11 +1937,19 @@
         return costs.reduce((acc, cost) => acc + prorateCostAmount(cost, state.settings.period), 0);
       }
 
+      function getNetTarget() {
+        return Math.max(calculateTotalCost() - (state.settings.availableCash || 0), 0);
+      }
+
       function updateCostSummary() {
         const total = calculateTotalCost();
         const periodLabel = PERIOD_LABELS[state.settings.period] || 'Seleccionado';
         elements.currentPeriodLabel.textContent = periodLabel.toLowerCase();
         elements.totalCostDisplay.textContent = currencyFormatter.format(total);
+        const available = state.settings.availableCash || 0;
+        const netTarget = Math.max(total - available, 0);
+        elements.availableCashDisplay.textContent = currencyFormatter.format(available);
+        elements.netTargetDisplay.textContent = currencyFormatter.format(netTarget);
         renderCostDetailPanel();
       }
 
@@ -1814,8 +2021,23 @@
         });
       }
 
+      function recalculateIfPossible() {
+        if (!lastModeUsed) {
+          renderCostDetailPanel();
+          return;
+        }
+        if (lastModeUsed === 'single') {
+          handleSingleCalculation();
+        } else if (lastModeUsed === 'mix') {
+          handleMixCalculation();
+        } else if (lastModeUsed === 'auto') {
+          handleGenerateOptions();
+        }
+      }
+
       function handleSingleCalculation() {
         state.settings.mode = 'single';
+        lastModeUsed = 'single';
         updateModeButtons();
         updateModePanels();
         const product = state.products.find(p => p.id === state.settings.selectedSkuId) || state.products[0];
@@ -1827,6 +2049,7 @@
 
       function handleMixCalculation() {
         state.settings.mode = 'mix';
+        lastModeUsed = 'mix';
         updateModeButtons();
         updateModePanels();
         const mix = {};
@@ -1842,6 +2065,7 @@
 
       function handleGenerateOptions() {
         state.settings.mode = 'auto';
+        lastModeUsed = 'auto';
         updateModeButtons();
         updateModePanels();
         const combos = buildAutomaticCombinations();
@@ -1946,9 +2170,29 @@
           return { title, error: 'La combinación no es válida.' };
         }
         entries.forEach((entry) => { entry.fraction = entry.fraction / totalFraction; });
-        const targetBase = calculateTotalCost();
+        const totalCost = calculateTotalCost();
+        const availableCash = state.settings.availableCash || 0;
+        const targetBase = getNetTarget();
         if (targetBase <= 0) {
-          return { title, message: 'El objetivo actual es 0. No se requieren unidades.', items: [], totalRevenue: 0, totalRevenueExact: 0, totalRevenueReal: 0, goalAmount: 0, baseCost: 0, warnings: [], totalUnits: 0, totalUnitsExact: 0, totalUnitsReal: 0 };
+          const summary = {
+            title,
+            message: 'El objetivo actual es 0. No se requieren unidades.',
+            items: [],
+            totalRevenue: 0,
+            totalRevenueExact: 0,
+            totalRevenueReal: 0,
+            goalAmount: 0,
+            baseCost: totalCost,
+            totalCost,
+            availableCash,
+            netTarget: 0,
+            warnings: [],
+            totalUnits: 0,
+            totalUnitsExact: 0,
+            totalUnitsReal: 0
+          };
+          summary.copyText = buildCopyText(summary);
+          return summary;
         }
         const marginSum = entries.reduce((acc, entry) => acc + (entry.marginUnit * entry.fraction), 0);
         if (marginSum <= 0) {
@@ -1994,7 +2238,10 @@
           totalRevenueExact: totalRevenue,
           totalRevenueReal,
           goalAmount: targetBase,
-          baseCost: targetBase,
+          baseCost: totalCost,
+          totalCost,
+          availableCash,
+          netTarget: targetBase,
           warnings,
           totalUnits,
           totalUnitsExact: totalUnits,
@@ -2008,7 +2255,13 @@
       function buildCopyText(result) {
         const lines = [];
         lines.push(`Opción: ${result.title}`);
-        lines.push(`Objetivo a cubrir: ${currencyFormatter.format(result.goalAmount)}`);
+        const totalCost = typeof result.totalCost === 'number' ? result.totalCost : calculateTotalCost();
+        const available = typeof result.availableCash === 'number' ? result.availableCash : (state.settings.availableCash || 0);
+        const netTarget = typeof result.goalAmount === 'number' ? result.goalAmount : getNetTarget();
+        lines.push(`Total prorrateado: ${currencyFormatter.format(totalCost)}`);
+        lines.push(`Disponible: ${currencyFormatter.format(available)}`);
+        lines.push(`Objetivo neto: ${currencyFormatter.format(netTarget)}`);
+        lines.push(`Objetivo a cubrir: ${currencyFormatter.format(netTarget)}`);
         const exact = typeof result.totalRevenueExact === 'number' ? result.totalRevenueExact : result.totalRevenue;
         const real = typeof result.totalRevenueReal === 'number' ? result.totalRevenueReal : exact;
         lines.push(`Facturación estimada: ${currencyFormatter.format(exact)}`);
@@ -2031,6 +2284,7 @@
           message.textContent = state.costs.length ? 'Elegí un modo y calculá para ver resultados.' : 'Agregá costos para comenzar.';
           elements.resultsContainer.appendChild(message);
           lastResults = [];
+          lastModeUsed = null;
           renderCostDetailPanel();
           return;
         }
@@ -2087,7 +2341,7 @@
               revenueReal.innerHTML = `<strong>Facturación real:</strong> ${currencyFormatter.format(result.totalRevenueReal)}`;
               footer.appendChild(revenueReal);
             }
-            if (result.items && result.items.length) {
+            if (result.copyText) {
               const copyBtn = document.createElement('button');
               copyBtn.textContent = 'Copiar resultado';
               copyBtn.addEventListener('click', () => copyResult(result));
